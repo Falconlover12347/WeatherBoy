@@ -63,6 +63,7 @@ To learn more about developing your project with Expo, look at the following res
 - [Learn Formik](https://formik.org/docs/guides/react-native): Follow a step-by-step tutorial where you'll learn client side form validation.
 - [Learn RTK Query](https://redux-toolkit.js.org/rtk-query/overview): Follow a step-by-step tutorial where you'll learn data fetching and caching tool.
 - [Learn Fake REST API](https://dummyjson.com): Follow a step-by-step tutorial where you'll learn REST API.
+- [Learn React Native Paper](https://reactnativepaper.com): Follow a step-by-step tutorial where you'll learn high-quality, standard-compliant Material Design library.
 
 ## Join the community
 

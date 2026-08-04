@@ -1,5 +1,5 @@
 import { apiSlice } from "@/api/apiSlice";
-import { login, logout } from "./authSlice";
+import { login } from "./authSlice";
 
 interface LoginCredentials {
   username: string;
@@ -44,22 +44,8 @@ export const authApi = apiSlice.injectEndpoints({
         }
       },
     }),
-    logout: builder.mutation<void, void>({
-      query: () => ({
-        url: "/auth/logout",
-        method: "POST",
-      }),
-      async onQueryStarted(_, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          dispatch(logout());
-        } catch (error) {
-          console.error("Logout failed:", error);
-        }
-      },
-    }),
   }),
   overrideExisting: false,
 });
 
-export const { useLoginMutation, useLogoutMutation } = authApi;
+export const { useLoginMutation } = authApi;

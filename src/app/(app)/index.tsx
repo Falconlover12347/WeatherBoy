@@ -2,11 +2,11 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useGetProductsQuery } from "../../features/products/productApi";
 

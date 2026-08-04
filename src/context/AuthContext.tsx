@@ -1,7 +1,16 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { createContext, useContext, type PropsWithChildren } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  type PropsWithChildren,
+} from "react";
+import { useDispatch } from "react-redux";
 
-import { useLoginMutation, useLogoutMutation } from "../features/auth/authApi";
+import { persistor } from "@/store/store";
+import { useLoginMutation } from "../features/auth/authApi";
+import { logout } from "../features/auth/authSlice";
 import { useAppSelector } from "../store/hooks";
 
 const AuthContext = createContext<{
@@ -13,8 +22,8 @@ const AuthContext = createContext<{
 
 const AuthProvider = ({ children }: PropsWithChildren) => {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [login] = useLoginMutation();
-  const [logout] = useLogoutMutation();
 
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
@@ -37,15 +46,17 @@ const AuthProvider = ({ children }: PropsWithChildren) => {
       throw new Error("Failed to sign in");
     }
   };
-
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
-      await logout().unwrap();
+      await AsyncStorage.removeItem("persist:root");
+      await persistor.purge();
+      dispatch(logout());
       router.replace("/(auth)/login");
     } catch (error) {
-      throw new Error("Failed to sign out");
+      console.error("Failed to sign out:", error);
+      router.replace("/(auth)/login");
     }
-  };
+  }, [router]);
 
   return (
     <AuthContext.Provider

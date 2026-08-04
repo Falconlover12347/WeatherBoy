@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
+import { PaperProvider } from "react-native-paper";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 
@@ -38,14 +39,16 @@ const RootLayout = () => {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <AuthProvider>
-            <RootNavigator />
-          </AuthProvider>
-        </PersistGate>
-      </Provider>
+      <PaperProvider>
+        <AnimatedSplashOverlay />
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <AuthProvider>
+              <RootNavigator />
+            </AuthProvider>
+          </PersistGate>
+        </Provider>
+      </PaperProvider>
     </ThemeProvider>
   );
 };
