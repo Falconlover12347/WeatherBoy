@@ -1,279 +1,107 @@
-import { useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import WeatherIcon, { weatherLabel } from '../../components/weather-icon';
+import { FONT } from '../../constants/colors';
+import { useColors } from '../../features/theme/themeSlice';
+import { useGetForecastQuery } from '../../features/weather/weatherApi';
+import { WatchItem } from '../../features/weather/watchlistSlice';
+import { useAppSelector } from '../../store/hooks';
 
-import { useGetProductsQuery } from "../../features/products/productApi";
+const PAGE = 8;
 
-const PAGE_SIZE = 10;
-
-const HomeScreen = () => {
-  const [page, setPage] = useState(0); 
-
-  const { data, isFetching, isLoading, error } = useGetProductsQuery({
-    limit: PAGE_SIZE,
-    skip: page * PAGE_SIZE,
+function Row({ item }: { item: WatchItem }) {
+  const c = useColors();
+  const router = useRouter();
+  const { data, isLoading } = useGetForecastQuery({
+    lat: item.latitude,
+    lon: item.longitude,
   });
 
-  const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 1;
-
-  if (isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2563EB" />
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: '/detail', params: { id: String(item.id) } })}
+      style={[s.row, { backgroundColor: c.card, borderColor: c.border }]}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={[s.name, { color: c.text }]}>{item.name}</Text>
+        <Text style={[s.country, { color: c.muted }]}>
+          {isLoading || !data ? '—' : weatherLabel(data.current.weather_code)}
+        </Text>
       </View>
-    );
-  }
 
-  if (error) {
-    return (
-      <View style={styles.center}>
-        <Text>Something went wrong.</Text>
-      </View>
-    );
-  }
+      {isLoading || !data ? (
+        <ActivityIndicator color={c.red} />
+      ) : (
+        <View style={s.right}>
+          <Text style={[s.temp, { color: c.text }]}>
+            {Math.round(data.current.temperature_2m)}°
+          </Text>
+          <WeatherIcon code={data.current.weather_code} color={c.red} />
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+export default function Home() {
+  const c = useColors();
+  const router = useRouter();
+  const items = useAppSelector((st) => st.watchlist.items);
+  const [count, setCount] = useState(PAGE);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top']} style={[s.screen, { backgroundColor: c.bg }]}>
+      <View style={s.header}>
+        <Text style={[s.title, { color: c.text }]}>WeatherBoy</Text>
+        <Pressable
+          onPress={() => router.push('/explore')}
+          hitSlop={12}
+          style={[s.add, { borderColor: c.border }]}
+        >
+          <Ionicons name="add" size={24} color={c.red} />
+        </Pressable>
+      </View>
+
       <FlatList
-        data={data?.products}
-        numColumns={2}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.list}
-        columnWrapperStyle={styles.row}
-        showsVerticalScrollIndicator={false}
-        ListFooterComponent={
-          <View style={styles.pagination}>
-            <TouchableOpacity
-              style={[
-                styles.pageButton,
-                page === 0 && styles.pageButtonDisabled,
-              ]}
-              onPress={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0 || isFetching}
-            >
-              <Text
-                style={[
-                  styles.pageButtonText,
-                  page === 0 && styles.pageButtonTextDisabled,
-                ]}
-              >
-                Prev
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.pageIndicator}>
-              {isFetching ? (
-                <ActivityIndicator size="small" color="#2563EB" />
-              ) : (
-                <Text style={styles.pageIndicatorText}>
-                  Page {page + 1} of {totalPages}
-                </Text>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.pageButton,
-                page + 1 >= totalPages && styles.pageButtonDisabled,
-              ]}
-              onPress={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page + 1 >= totalPages || isFetching}
-            >
-              <Text
-                style={[
-                  styles.pageButtonText,
-                  page + 1 >= totalPages && styles.pageButtonTextDisabled,
-                ]}
-              >
-                Next
-              </Text>
-            </TouchableOpacity>
-          </View>
+        data={items.slice(0, count)}
+        keyExtractor={(i) => String(i.id)}
+        renderItem={({ item }) => <Row item={item} />}
+        onEndReachedThreshold={0.4}
+        onEndReached={() => setCount((n) => (n < items.length ? n + PAGE : n))}
+        contentContainerStyle={{ padding: 16, paddingTop: 4 }}
+        ListEmptyComponent={
+          <Text style={[s.empty, { color: c.muted }]}>No countries yet. Tap + to add one.</Text>
         }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.discountBadge}>
-              <Text style={styles.discountText}>
-                -{Math.round(item.discountPercentage)}%
-              </Text>
-            </View>
-
-            <Image
-              source={{ uri: item.thumbnail }}
-              style={styles.image}
-              resizeMode="contain"
-            />
-
-            <Text numberOfLines={2} style={styles.title}>
-              {item.title}
-            </Text>
-
-            <Text style={styles.category}>
-              {item.brand} • {item.category}
-            </Text>
-
-            <View style={styles.priceRow}>
-              <Text style={styles.price}>${item.price}</Text>
-
-              <Text style={styles.rating}>⭐ {item.rating.toFixed(1)}</Text>
-            </View>
-
-            <Text
-              style={[
-                styles.stock,
-                {
-                  color: item.stock > 0 ? "#16A34A" : "#DC2626",
-                },
-              ]}
-            >
-              {item.stock > 0 ? `${item.stock} in stock` : "Out of Stock"}
-            </Text>
-          </View>
-        )}
       />
     </SafeAreaView>
   );
-};
+}
 
-export default HomeScreen;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F4F6F8",
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  list: {
-    padding: 12,
-  },
-
+  title: { fontFamily: FONT, fontSize: 34 },
+  add: { borderWidth: 1, borderRadius: 999, padding: 6 },
   row: {
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
   },
-
-  card: {
-    backgroundColor: "#fff",
-    width: "48%",
-    borderRadius: 18,
-    padding: 12,
-    marginBottom: 14,
-
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-
-  image: {
-    width: "100%",
-    height: 140,
-    marginBottom: 12,
-  },
-
-  title: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
-    minHeight: 42,
-  },
-
-  category: {
-    color: "#6B7280",
-    marginTop: 4,
-    fontSize: 12,
-  },
-
-  priceRow: {
-    marginTop: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  price: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#2563EB",
-  },
-
-  rating: {
-    fontSize: 13,
-    color: "#F59E0B",
-    fontWeight: "600",
-  },
-
-  stock: {
-    marginTop: 8,
-    fontWeight: "600",
-    fontSize: 12,
-  },
-
-  discountBadge: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: "#EF4444",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    zIndex: 10,
-  },
-
-  discountText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  pagination: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 4,
-  },
-  pageButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  pageButtonDisabled: {
-    backgroundColor: "#E5E7EB",
-  },
-  pageButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  pageButtonTextDisabled: {
-    color: "#9CA3AF",
-  },
-  pageIndicator: {
-    minWidth: 100,
-    alignItems: "center",
-  },
-  pageIndicatorText: {
-    color: "#374151",
-    fontWeight: "600",
-    fontSize: 14,
-  },
+  name: { fontFamily: FONT, fontSize: 26 },
+  country: { fontFamily: FONT, fontSize: 16 },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  temp: { fontFamily: FONT, fontSize: 30 },
+  empty: { fontFamily: FONT, fontSize: 20, textAlign: 'center', marginTop: 40 },
 });

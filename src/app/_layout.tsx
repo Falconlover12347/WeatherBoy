@@ -1,14 +1,14 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { useColorScheme } from "react-native";
 import { PaperProvider } from "react-native-paper";
-import { Provider } from "react-redux";
+import { Provider, useSelector } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import AuthProvider, { useAuth } from "@/context/AuthContext";
-import { persistor, store } from "@/store/store";
+import { useAppFonts } from "@/hooks/use-app-fonts";
+import { persistor, store, type RootState } from "@/store/store";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,26 +30,36 @@ const RootNavigator = () => {
   );
 };
 
-const RootLayout = () => {
-  const colorScheme = useColorScheme();
-
-  useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
+const Themed = () => {
+  const mode = useSelector((s: RootState) => s.theme.mode);
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={mode === "dark" ? DarkTheme : DefaultTheme}>
       <PaperProvider>
         <AnimatedSplashOverlay />
-        <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            <AuthProvider>
-              <RootNavigator />
-            </AuthProvider>
-          </PersistGate>
-        </Provider>
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
       </PaperProvider>
     </ThemeProvider>
+  );
+};
+
+const RootLayout = () => {
+  const fontsLoaded = useAppFonts();
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
+  return (
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <Themed />
+      </PersistGate>
+    </Provider>
   );
 };
 
