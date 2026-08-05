@@ -6,6 +6,12 @@ interface LoginCredentials {
   password: string;
 }
 
+interface RegisterCredentials {
+  firstName: string;
+  lastName: string;
+  age: number;
+}
+
 interface AuthResponse {
   user: {
     id: string;
@@ -31,21 +37,35 @@ export const authApi = apiSlice.injectEndpoints({
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
+
           dispatch(
             login({
               user: data.user,
               token: data.token,
               refreshToken: data.refreshToken ?? null,
               isAuthenticated: data.isAuthenticated ?? true,
-            }),
+            })
           );
         } catch (error) {
           console.error("Login failed:", error);
         }
       },
     }),
+
+    register: builder.mutation<any, RegisterCredentials>({
+      query: (user) => ({
+        url: "/users/add",
+        method: "POST",
+        body: user,
+      }),
+    }),
   }),
   overrideExisting: false,
 });
 
-export const { useLoginMutation } = authApi;
+export const {
+  useLoginMutation,
+  useRegisterMutation,
+} = authApi;
+
+4

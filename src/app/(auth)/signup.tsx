@@ -1,13 +1,16 @@
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import { useFormik } from "formik";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Modal,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Yup from "yup";
@@ -69,11 +72,15 @@ const SignupSchema = Yup.object().shape({
     .required("Please confirm your password")
     .oneOf([Yup.ref("password")], "Passwords do not match"),
 });
+
 const SignupScreen = () => {
   const router = useRouter();
+  const { signUp } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const formik = useFormik({
     initialValues: {
@@ -82,20 +89,34 @@ const SignupScreen = () => {
       password: "",
       confirmPassword: "",
     },
+
     validationSchema: SignupSchema,
+
     validateOnChange: true,
     validateOnBlur: true,
+
     onSubmit: async (values) => {
       setLoading(true);
+
       try {
-        console.log("values::::", values);
+        await signUp(values.email, values.password, values.name);
+        setShowSuccessModal(true);
       } catch (error) {
-        console.error("Signup error:", error);
+        Alert.alert(
+          "Signup Failed",
+          "Unable to create your account. Please try again."
+        );
       } finally {
         setLoading(false);
       }
     },
   });
+
+  const handleGoToLogin = () => {
+    setShowSuccessModal(false);
+    router.replace("/(auth)/login");
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <ScrollView
@@ -325,6 +346,100 @@ const SignupScreen = () => {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Success Modal */}
+      <Modal
+        visible={showSuccessModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 32,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 20,
+              paddingVertical: 28,
+              paddingHorizontal: 24,
+              width: "100%",
+              alignItems: "center",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 8,
+            }}
+          >
+            {/* Success Icon */}
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: "#D1FAE5",
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Text style={{ fontSize: 32, color: "#10B981" }}>✓</Text>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "bold",
+                color: "#2F4768",
+                textAlign: "center",
+                marginBottom: 8,
+              }}
+            >
+              Account Created
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 14,
+                color: "#6B7280",
+                textAlign: "center",
+                lineHeight: 20,
+                marginBottom: 24,
+              }}
+            >
+              Your account has been created successfully. 
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#2F4768",
+                borderRadius: 12,
+                paddingVertical: 14,
+                width: "100%",
+              }}
+              onPress={handleGoToLogin}
+            >
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  textAlign: "center",
+                  fontWeight: "600",
+                  fontSize: 16,
+                }}
+              >
+                OK, Return to Login
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

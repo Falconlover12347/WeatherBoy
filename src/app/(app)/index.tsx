@@ -1,20 +1,28 @@
+import { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useGetProductsQuery } from "../../features/products/productApi";
 
+const PAGE_SIZE = 10;
+
 const HomeScreen = () => {
-  const { data, isLoading, error } = useGetProductsQuery({
-    limit: 10,
-    skip: 0,
+  const [page, setPage] = useState(0); 
+
+  const { data, isFetching, isLoading, error } = useGetProductsQuery({
+    limit: PAGE_SIZE,
+    skip: page * PAGE_SIZE,
   });
+
+  const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 1;
 
   if (isLoading) {
     return (
@@ -41,6 +49,55 @@ const HomeScreen = () => {
         contentContainerStyle={styles.list}
         columnWrapperStyle={styles.row}
         showsVerticalScrollIndicator={false}
+        ListFooterComponent={
+          <View style={styles.pagination}>
+            <TouchableOpacity
+              style={[
+                styles.pageButton,
+                page === 0 && styles.pageButtonDisabled,
+              ]}
+              onPress={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0 || isFetching}
+            >
+              <Text
+                style={[
+                  styles.pageButtonText,
+                  page === 0 && styles.pageButtonTextDisabled,
+                ]}
+              >
+                Prev
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.pageIndicator}>
+              {isFetching ? (
+                <ActivityIndicator size="small" color="#2563EB" />
+              ) : (
+                <Text style={styles.pageIndicatorText}>
+                  Page {page + 1} of {totalPages}
+                </Text>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.pageButton,
+                page + 1 >= totalPages && styles.pageButtonDisabled,
+              ]}
+              onPress={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page + 1 >= totalPages || isFetching}
+            >
+              <Text
+                style={[
+                  styles.pageButtonText,
+                  page + 1 >= totalPages && styles.pageButtonTextDisabled,
+                ]}
+              >
+                Next
+              </Text>
+            </TouchableOpacity>
+          </View>
+        }
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.discountBadge}>
@@ -184,5 +241,39 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     fontWeight: "700",
+  },
+
+  pagination: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 4,
+  },
+  pageButton: {
+    backgroundColor: "#2563EB",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  pageButtonDisabled: {
+    backgroundColor: "#E5E7EB",
+  },
+  pageButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  pageButtonTextDisabled: {
+    color: "#9CA3AF",
+  },
+  pageIndicator: {
+    minWidth: 100,
+    alignItems: "center",
+  },
+  pageIndicatorText: {
+    color: "#374151",
+    fontWeight: "600",
+    fontSize: 14,
   },
 });

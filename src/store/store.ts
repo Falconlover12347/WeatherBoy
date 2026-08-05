@@ -10,7 +10,7 @@ const persistConfig = {
   key: "root",
   version: 1,
   storage: AsyncStorage,
-  blacklist: ["api"], // Prevent caching API data in persisted storage
+  blacklist: ["api"], 
 };
 
 const rootReducer = combineReducers({
@@ -28,7 +28,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
-    }).concat(apiSlice.middleware), // This activates caching and background updates
+    }).concat(apiSlice.middleware), 
 });
 
 export const persistor = persistStore(store);
